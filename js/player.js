@@ -133,11 +133,13 @@ $('btn-paste').addEventListener('click', async () => {
 function openPlayer(src, title, poster, imdb, subLinks) {
   S.src = src; S.title = title || ''; S.poster = poster || ''; S.imdb = imdb || '';
   S.curEp = -1; S.curVer = 0; S.resumeOffered = false; S.retryCount = 0;
+  S.savedPos = 0; S.isLocalFile = src.startsWith('blob:');
   $('player').classList.add('on');
   document.body.style.overflow = 'hidden';
-  document.documentElement.requestFullscreen?.catch?.(() => { });
+  if (S.isLocalFile) { /* skip fullscreen request for local files (keeps things simple) */ }
   renderTitle();
   renderEpsBtn(); renderVersBtn();
+  pushBackState();
   if (subLinks && subLinks.length) Subs.addRemote(subLinks);
   loadSource(src);
   const saved = parseFloat(localStorage.getItem(posKey()) || '0');
@@ -156,6 +158,7 @@ function closePlayer() {
 
 $('btn-close').addEventListener('click', closePlayer);
 $('err-back').addEventListener('click', closePlayer);
+$('btn-quality').addEventListener('click', e => { wireQuality(); togglePop('pop-quality', e.currentTarget); });
 
 function renderTitle() {
   $('v-title').textContent = S.title || 'پخش آنلاین';
@@ -182,7 +185,8 @@ function loadSource(src, keepPos) {
     });
     hls.loadSource(src);
     hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => { showSpinner(false); tryPlay(); });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { showSpinner(false); tryPlay(); updQualityBtn(); });
+    hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, () => updQualityBtn());
   } else {
     video.src = src;
     video.load();
@@ -652,6 +656,156 @@ function showOSD(ic, val) {
 }
 function hideOSD() { $('osd').style.display = 'none'; }
 
+/* ---------- HLS quality + audio tracks ---------- */
+function wireQuality() {
+  const ql = $('qualityList'), al = $('audioList');
+  if (!S.hls) { ql.innerHTML = '<div style="font-size:.7rem;color:var(--text3);padding:4px 8px">این ویدیو HLS نیست — کیفیت انتخابی ندارد</div>'; $('audioHead').style.display = 'none'; al.innerHTML = ''; return; }
+  const lv = S.hls.levels || [];
+  if (!lv.length) { ql.innerHTML = '<div style="font-size:.7rem;color:var(--text3);padding:4px 8px">کیفیتی پیدا نشد</div>'; return; }
+  ql.innerHTML = `<button class="hlrow ${S.hls.autoLevelEnabled ? 'active' : ''}" data-l="-1">خودکار (تطبیقی)</button>` +
+    lv.map((l, i) => `<button class="hlrow ${S.hls.currentLevel === i && !S.hls.autoLevelEnabled ? 'active' : ''}" data-l="${i}">${l.height ? l.height + 'p' : (Math.round(l.bitrate / 1000) + 'kbps')}</button>`).reverse().join('');
+  ql.querySelectorAll('.hlrow').forEach(b => b.onclick = () => {
+    S.hls.currentLevel = +b.dataset.l;
+    toast(+b.dataset.l === -1 ? 'کیفیت: خودکار' : 'کیفیت: ' + b.textContent.trim());
+    $('pop-quality').classList.remove('on');
+    wireQuality();
+  });
+  // audio tracks (دوبله چندصدا داخل HLS)
+  const at = (S.hls.audioTracks && S.hls.audioTracks.length > 1) ? S.hls.audioTracks : null;
+  $('audioHead').style.display = at ? '' : 'none';
+  al.innerHTML = at ? at.map((t, i) => `<button class="hlrow ${S.hls.audioTrack === i ? 'active' : ''}" data-a="${i}">${esc(t.name || t.lang || 'ترک ' + (i + 1))}</button>`).join('') : '';
+  al.querySelectorAll('.hlrow').forEach(b => b.onclick = () => {
+    S.hls.audioTrack = +b.dataset.a;
+    toast('ترک صدا: ' + b.textContent.trim());
+    $('pop-quality').classList.remove('on');
+  });
+}
+// quality button (only HLS)
+function updQualityBtn() { $('btn-quality').style.display = S.hls ? '' : 'none'; }
+
+/* ---------- volume boost (WebAudio) ---------- */
+let audioCtx = null, gainNode = null, boostOn = false, srcNode = null;
+function toggleBoost() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      srcNode = audioCtx.createMediaElementSource(video);
+      gainNode = audioCtx.createGain();
+      srcNode.connect(gainNode).connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    boostOn = !boostOn;
+    gainNode.gain.value = boostOn ? 2.2 : 1;
+    $('btn-boost').classList.toggle('active', boostOn);
+    toast(boostOn ? 'تقویت صدا: روشن (+۱۲۰٪)' : 'تقویت صدا: خاموش');
+  } catch (e) { toast('تقویت صدا پشتیبانی نشد'); }
+}
+$('btn-boost').addEventListener('click', toggleBoost);
+
+/* ---------- local file playback ---------- */
+$('btn-local-file').addEventListener('click', () => $('videoFileInput').click());
+$('videoFileInput').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  S.title = S.title || f.name.replace(/\.[^.]+$/, '');
+  S.versions = []; S.episodes = []; S.imdb = S.imdb || 'file:' + f.name;
+  openPlayer(url, S.title, '', S.imdb);
+  S.isLocalFile = true;
+  toast('پخش فایل محلی: ' + f.name);
+  e.target.value = '';
+});
+
+/* drag & drop */
+let dragDepth = 0;
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => {
+  e.preventDefault();
+  if (ev === 'dragenter') dragDepth++;
+  $('dropHint').classList.add('on');
+}));
+document.addEventListener('dragleave', e => { if (--dragDepth <= 0) { dragDepth = 0; $('dropHint').classList.remove('on'); } });
+document.addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0; $('dropHint').classList.remove('on');
+  const files = [...(e.dataTransfer?.files || [])];
+  const vid = files.find(f => /\.(mp4|mkv|webm|mov|avi|m4v)$/i.test(f.name) || f.type.startsWith('video/'));
+  const sub = files.filter(f => /\.(srt|vtt|ass)$/i.test(f.name));
+  if (sub.length) { sub.forEach(f => Subs.addFile(f)); toast('زیرنویس اضافه شد: ' + sub.map(f => f.name).join(', ')); }
+  if (vid) {
+    const url = URL.createObjectURL(vid);
+    S.versions = []; S.episodes = [];
+    S.imdb = S.imdb || 'file:' + vid.name;
+    openPlayer(url, vid.name.replace(/\.[^.]+$/, ''), '', S.imdb);
+    S.isLocalFile = true;
+  }
+});
+
+/* ---------- share link ---------- */
+$('btn-share').addEventListener('click', async () => {
+  const src = $('inp-src').value.trim();
+  if (!src) { toast('اول لینک ویدیو را وارد کنید'); return; }
+  const p = new URLSearchParams();
+  p.set('src', src);
+  if ($('inp-title').value.trim()) p.set('title', $('inp-title').value.trim());
+  if ($('inp-poster').value.trim()) p.set('poster', $('inp-poster').value.trim());
+  if ($('inp-imdb').value.trim()) p.set('imdb', $('inp-imdb').value.trim());
+  const link = location.origin + location.pathname + '?' + p.toString();
+  try {
+    if (navigator.share) await navigator.share({ title: 'سینما پلی', url: link });
+    else { await navigator.clipboard.writeText(link); toast('لینک کپی شد ✓'); }
+  } catch (e) { }
+});
+
+/* ---------- finder wiring ---------- */
+$('subs-find').addEventListener('click', () => {
+  $('pop-subs').classList.remove('on');
+  const fname = S.src.split('/').pop() || S.title;
+  SubFinder.open(fname, { title: S.title });
+});
+
+/* ---------- Wake Lock (no sleep while playing) ---------- */
+let wakeLock = null;
+async function reqWakeLock() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('video'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch (e) { }
+}
+video.addEventListener('play', reqWakeLock);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !video.paused) reqWakeLock(); });
+
+/* ---------- Media Session (locksreen / hardware keys) ---------- */
+if ('mediaSession' in navigator) {
+  const setMS = () => {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: S.title || 'پخش آنلاین',
+        artist: S.episodes.length && S.curEp >= 0 ? 'فصل ' + S.episodes[S.curEp].season + ' قسمت ' + S.episodes[S.curEp].ep : 'سینما پلی',
+        artwork: S.poster ? [{ src: S.poster, sizes: '512x512', type: 'image/jpeg' }] : []
+      });
+      navigator.mediaSession.setActionHandler('play', () => video.play());
+      navigator.mediaSession.setActionHandler('pause', () => video.pause());
+      navigator.mediaSession.setActionHandler('previoustrack', () => { const c = currentEpIndex(); if (c > 0) playEp(c - 1); });
+      navigator.mediaSession.setActionHandler('nexttrack', () => playNextEp(false));
+      navigator.mediaSession.setActionHandler('seekbackward', () => video.currentTime = clamp(video.currentTime - 10, 0, S.duration));
+      navigator.mediaSession.setActionHandler('seekforward', () => video.currentTime = clamp(video.currentTime + 10, 0, S.duration));
+    } catch (e) { }
+  };
+  video.addEventListener('play', setMS);
+  video.addEventListener('loadedmetadata', setMS);
+}
+
+/* ---------- mobile back button closes player (not page) ---------- */
+let backPushed = false;
+function pushBackState() {
+  if (backPushed) return;
+  backPushed = true;
+  history.pushState({ cineplay: true }, '');
+}
+window.addEventListener('popstate', e => {
+  if ($('player').classList.contains('on')) {
+    closePlayer();
+    backPushed = false;
+    if (!e.state) history.pushState({ cineplay: true }, ''), backPushed = true;
+  }
+});
+
 /* ---------- boot ---------- */
 (function boot() {
   renderRecents();
@@ -663,4 +817,5 @@ function hideOSD() { $('osd').style.display = 'none'; }
     if (p.next) S.next = p.next;
     openPlayer(p.src, p.title, p.poster, p.imdb);
   }
+  updQualityBtn();
 })();

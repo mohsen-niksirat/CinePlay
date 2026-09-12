@@ -219,10 +219,10 @@ const Subs = (() => {
       localStorage.setItem('cp-sub-color', state.style.color);
       localStorage.setItem('cp-sub-bg', state.style.bg);
       localStorage.setItem('cp-sub-pos', state.style.pos);
-      // keep settings panel in sync
       const m = { size: 'subSize', color: 'subColor', pos: 'subPos' };
       for (const k in m) { const el = document.getElementById(m[k]); if (el && patch[k] !== undefined) el.value = patch[k]; }
     },
+    refresh,
     get active() { return state.active; },
     get tracks() { return state.tracks; }
   };
@@ -248,11 +248,10 @@ document.getElementById('subs-manage').addEventListener('click', () => {
   document.getElementById('panel-subs').classList.add('on');
 });
 document.getElementById('btn-subs').addEventListener('click', e => {
-  Subs.refresh ? null : null;
-  document.getElementById('pop-subs').classList.add('on');
-  const r = e.currentTarget.getBoundingClientRect();
   const p = document.getElementById('pop-subs');
+  p.classList.add('on');
+  const r = e.currentTarget.getBoundingClientRect();
   p.style.left = clamp2(r.left + r.width / 2 - 110, 8, innerWidth - 240) + 'px';
-  if (typeof Subs.refresh === 'function') Subs.refresh();
+  renderPopover();
 });
 function clamp2(v, a, b) { return Math.min(b, Math.max(a, v)); }

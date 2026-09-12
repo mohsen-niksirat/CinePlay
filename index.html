@@ -235,6 +235,38 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
 .sleep-badge.on{display:flex}
 .sleep-badge b{color:var(--blue)}
 
+/* finder overlay */
+.finder-ov{position:fixed;inset:0;background:rgba(5,5,8,.8);backdrop-filter:blur(10px);z-index:900;display:none;align-items:center;justify-content:center;padding:20px}
+.finder-ov.on{display:flex}
+.finder-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;width:min(560px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.finder-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.finder-head h3{font-size:.95rem;font-weight:800;display:flex;gap:8px;align-items:center}
+.finder-body{padding:16px 18px;overflow-y:auto}
+.finder-bar{display:flex;gap:8px;margin-bottom:6px}
+.finder-bar input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:.8rem;outline:none;font-family:var(--font)}
+.finder-bar input:focus{border-color:var(--accent)}
+.finder-bar button{padding:0 18px;border:none;border-radius:10px;background:var(--grad);color:#fff;font-size:.75rem;font-weight:800}
+#finder-ep-info{font-size:.66rem;color:var(--text3);margin-bottom:14px;display:block}
+.finder-row{display:flex;align-items:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:8px;color:var(--text);font-size:.75rem;font-weight:600;text-align:right;transition:.15s}
+.finder-row:hover{border-color:#3a3a48;transform:translateX(-3px)}
+.fr-lang{font-size:.68rem;color:var(--text2);min-width:64px}
+.fr-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr-dl{color:var(--text3);font-size:.62rem;margin-right:6px}
+.fr-go{font-size:.65rem;color:var(--accent2);font-weight:800}
+.finder-sites{margin-top:16px}
+.finder-sites h4{font-size:.7rem;color:var(--text2);font-weight:800;margin-bottom:8px}
+.site-link{display:inline-block;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:7px 11px;font-size:.68rem;font-weight:700;margin:0 0 6px 6px;text-decoration:none;transition:.15s}
+.site-link:hover{border-color:var(--accent);color:#fff}
+
+/* quality/audio menu in HLS */
+.hlrow{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:var(--text);padding:9px 10px;border-radius:9px;font-size:.78rem;font-weight:600;text-align:right}
+.hlrow:hover{background:rgba(255,255,255,.07)}
+.hlrow.active{color:var(--accent2)}
+
+/* device-file drop hint */
+.drop-hint{position:fixed;inset:12px;border:2px dashed var(--accent);border-radius:18px;background:rgba(10,10,12,.9);z-index:950;display:none;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--text)}
+.drop-hint.on{display:flex}
+
 /* hidden util */
 .hide-ui .topbar,.hide-ui .controls{opacity:0;visibility:hidden}
 .hide-ui .stage{cursor:none}
@@ -304,7 +336,11 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
     <label>شناسه IMDb (اختیاری — برای ادامه تماشا)</label>
     <input id="inp-imdb" type="text" placeholder="tt1375666" dir="ltr">
   </div>
-  <button class="primary-btn" id="btn-play">▶ پخش</button>
+    <button class="primary-btn" id="btn-play">▶ پخش</button>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="primary-btn" id="btn-local-file" style="background:var(--bg2);border:1px solid var(--border);box-shadow:none;font-size:.8rem">📁 فایل از دستگاه</button>
+      <button class="primary-btn" id="btn-share" style="background:var(--bg2);border:1px solid var(--border);box-shadow:none;font-size:.8rem">🔗 اشتراک لینک</button>
+    </div>
 
   <div class="sec-title">🕘 ادامه تماشا</div>
   <div id="recents"></div>
@@ -388,7 +424,7 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
         <span class="time" id="t-dur">00:00</span>
       </div>
       <div class="ctl-row">
-        <button class="icon-btn" id="btn-play-pause" title="پخش/توقف">
+        <button class="icon-btn" id="btn-play-pause" title="پخش/توقف">>>
           <svg id="ic-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           <svg id="ic-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
         </button>
@@ -409,6 +445,10 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
           <input type="range" id="vol" min="0" max="1" step="0.01" value="1">
         </div>
         <div class="spacer"></div>
+        <button class="icon-btn" id="btn-boost" title="تقویت صدا" style="display:none">🔊+</button>
+        <div style="position:relative">
+          <button class="icon-btn" id="btn-quality" title="کیفیت" style="display:none;font-size:.72rem;font-weight:800">HD</button>
+        </div>
         <div style="position:relative">
           <button class="icon-btn" id="btn-subs" title="زیرنویس">
             <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM4 11h4v2H4v-2zm4 6H4v-2h4v2zm2-6h8v2h-8v-2zm8 6h-8v-2h8v2z"/></svg>
@@ -540,7 +580,16 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
       <button class="opt" id="subs-off">✖ خاموش</button>
       <button class="opt" id="subs-file">📁 فایل از دستگاه</button>
       <button class="opt" id="subs-url">🔗 لینک زیرنویس</button>
+      <button class="opt" id="subs-find">🔎 جستجوی آنلاین</button>
       <button class="opt" id="subs-manage">⚙️ مدیریت و استایل</button>
+    </div>
+
+    <!-- quality/audio popover (HLS) -->
+    <div class="pop" id="pop-quality">
+      <h4>کیفیت تصویر</h4>
+      <div id="qualityList"></div>
+      <h4 id="audioHead" style="display:none">ترک صدا</h4>
+      <div id="audioList"></div>
     </div>
 
     <!-- stats popover -->
@@ -583,8 +632,34 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
 </div>
 
 <input type="file" id="subFileInput" accept=".srt,.vtt,.ass" style="display:none">
+<input type="file" id="videoFileInput" accept="video/*,.mkv" style="display:none">
+
+<!-- ═══════════ Finder overlay ═══════════ -->
+<div class="finder-ov" id="finderOv">
+  <div class="finder-box">
+    <div class="finder-head">
+      <h3>🔎 یابنده زیرنویس آنلاین</h3>
+      <button class="icon-btn" id="finder-close" style="background:var(--bg);border:1px solid var(--border)">✕</button>
+    </div>
+    <div class="finder-body">
+      <div class="finder-bar">
+        <input id="finder-title-input" type="text" placeholder="نام فیلم یا سریال (انگلیسی)">
+        <button id="finder-search">🔍 جستجو</button>
+      </div>
+      <span id="finder-ep-info"></span>
+      <div id="finder-results"></div>
+      <div class="finder-sites">
+        <h4>جستجو در سایت‌های زیرنویس:</h4>
+        <div id="finder-sites"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="drop-hint" id="dropHint">🎬 فایل ویدیو را رها کنید</div>
 
 <script src="js/subs.js"></script>
+<script src="js/finder.js"></script>
 <script src="js/player.js"></script>
 <script>
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
