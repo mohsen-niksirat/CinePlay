@@ -103,21 +103,41 @@ const Subs = (() => {
   }
 
   /* ---------- load from url / file ---------- */
+  /* ذخیره خودکار زیرنویس per-IMDb (localStorage، حداکثر ۳ نسخه) */
+  function storeKey() { return 'cp-subs:' + (window.PLAYER_IMDB || 'last'); }
+  function persist() {
+    try {
+      // فقط ۴KB اول هر زیرنویس را نگه می‌داریم؟ نه — localStorage تا ~5MB؛ ولی برای اطمینان فقط ۲ زیرنویس برتر
+      const keep = state.tracks.slice(0, 2).map(t => ({ name: t.name, cues: t.cues.slice(0, 4000) }));
+      localStorage.setItem(storeKey(), JSON.stringify(keep));
+    } catch (e) { /* حافظه پر — بی‌خیال */ }
+  }
+  function restore() {
+    try {
+      const raw = localStorage.getItem(storeKey());
+      if (!raw) return 0;
+      const arr = JSON.parse(raw);
+      let n = 0;
+      for (const s of arr) { if (s.cues && s.cues.length && state.tracks.length < 4) { state.tracks.push(s); n++; } }
+      return n;
+    } catch (e) { return 0; }
+  }
+
   async function addRemote(urls) {
     for (const u of (Array.isArray(urls) ? urls : [urls])) {
       try {
-        const r = await fetch(u);
-        if (!r.ok) throw new Error();
+        const r = await Net.cpFetch(u);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         const t = await r.text();
         addParsed(t, u.split('/').pop() || 'زیرنویس');
-      } catch (e) { console.warn('sub load fail', u); }
+      } catch (e) { console.warn('sub load fail', u, e); }
     }
-    refresh();
+    refresh(); persist();
   }
 
   function addFile(file) {
     const reader = new FileReader();
-    reader.onload = () => { addParsed(reader.result, file.name); refresh(); };
+    reader.onload = () => { addParsed(reader.result, file.name); refresh(); persist(); };
     reader.readAsText(file, 'utf-8');
   }
 
@@ -204,7 +224,7 @@ const Subs = (() => {
 
   /* ---------- public ---------- */
   return {
-    addRemote, addFile, addParsed,
+    addRemote, addFile, addParsed, persist, restore,
     reset() { state.tracks = []; state.active = -1; render.textContent = ''; refresh(); },
     off() { state.active = -1; render.textContent = ''; refresh(); },
     offset(d) {

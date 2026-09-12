@@ -178,10 +178,45 @@ function loadSource(src, keepPos) {
   if (S.hls) { S.hls.destroy(); S.hls = null; }
 
   if (isHls(src) && window.Hls && Hls.isSupported()) {
-    const hls = new Hls({ maxBufferLength: 30, manifestLoadingMaxRetry: 3, fragLoadingMaxRetry: 4 });
+    const hls = new Hls({
+      maxBufferLength: 30, manifestLoadingMaxRetry: 3, fragLoadingMaxRetry: 4,
+      // لودر پروکسی: اگر خطای شبکه یا رنج آمد از پروکسی ادامه بده
+      loaderSetup: undefined
+    });
     S.hls = hls;
+    S.hlsNetErrors = 0;
+    let usingProxy = false;
+
+    const goProxy = () => {
+      if (usingProxy) return false;
+      usingProxy = true;
+      Net.forceProxy = true;
+      toast('🔒 اتصال مستقیم ممکن نیست — از پروکسی ادامه می‌دهیم');
+      // reload source via proxy loader
+      if (S.hls) { S.hls.destroy(); S.hls = null; }
+      const hls2 = new Hls({ maxBufferLength: 30, manifestLoadingMaxRetry: 2, fragLoadingMaxRetry: 6 });
+      S.hls = hls2;
+      const PLoader = Net.makeProxyLoader(Hls.DefaultConfig.loader);
+      hls2.config.loader = PLoader;
+      hls2.on(Hls.Events.MANIFEST_PARSED, () => { showSpinner(false); tryPlay(); updQualityBtn(); });
+      hls2.on(Hls.Events.ERROR, (e, d) => { if (d.fatal) showError('خطا در استریم', 'حتی از طریق پروکسی هم نشد. لینک مرده یا سرور آفلاین است.'); });
+      hls2.loadSource(src);
+      hls2.attachMedia(video);
+      return true;
+    };
+
     hls.on(Hls.Events.ERROR, (e, d) => {
-      if (d.fatal) showError('خطا در استریم HLS', 'اتصال قطع شد یا لینک معتبر نیست.');
+      if (!d.fatal) {
+        // خطاهای غیرمرگبار شبکه → اگر تکرار شد برو پروکسی
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          S.hlsNetErrors = (S.hlsNetErrors || 0) + 1;
+          if (S.hlsNetErrors >= 2) goProxy();
+        }
+        return;
+      }
+      // fatal
+      if (d.type === Hls.ErrorTypes.NETWORK_ERROR && !usingProxy) { goProxy(); return; }
+      showError('خطا در استریم HLS', 'اتصال قطع شد یا لینک معتبر نیست.');
     });
     hls.loadSource(src);
     hls.attachMedia(video);
@@ -192,6 +227,11 @@ function loadSource(src, keepPos) {
     video.load();
   }
   if (keepPos) video.currentTime = pos;
+
+  // بازیابی زیرنویس ذخیره‌شده همین عنوان (per imdb)
+  window.PLAYER_IMDB = S.imdb || src;
+  const n = Subs.restore();
+  if (n) { toast('زیرنویس ذخیره‌شده بازیابی شد (' + fa(n) + ')'); Subs.refresh(); }
 }
 
 video.addEventListener('loadedmetadata', () => { S.duration = video.duration || 0; $('t-dur').textContent = fmt(S.duration); showSpinner(false); maybeOfferResume(); });
