@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="description" content="پلیر آنلاین فیلم و سریال — زیرنویس، دوبله، ادامه تماشا">
+<title>سینما پلی</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a0c;--bg2:#15151a;--card:#191920;--border:#282833;
+  --text:#ececf1;--text2:#8f8f9c;--text3:#5f5f6b;
+  --accent:#e50914;--accent2:#ff5f3d;--gold:#f5c518;--green:#46d369;--blue:#3b9eff;
+  --grad:linear-gradient(135deg,#e50914,#ff5f3d);
+  --font:'Vazirmatn',system-ui,sans-serif;
+  --player-border-radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font-family:var(--font);cursor:pointer}
+input,select{font-family:var(--font)}
+
+/* ---------- Home (link form) ---------- */
+#home{max-width:680px;margin:0 auto;padding:32px 20px 60px}
+.logo{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.logo-ic{width:52px;height:52px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 28px rgba(229,9,20,.28)}
+.logo-ic svg{width:30px;height:30px;fill:#fff}
+.logo h1{font-size:1.5rem;font-weight:900}
+.logo p{font-size:.72rem;color:var(--text2);margin-top:2px}
+.tagline{color:var(--text2);font-size:.85rem;margin-bottom:28px;line-height:1.8}
+.sec-title{font-size:.95rem;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;gap:8px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.72rem;font-weight:700;color:var(--text2);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 14px;font-size:.85rem;outline:none;transition:border-color .2s}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:70px;font-size:.8rem;line-height:1.7}
+.hint{font-size:.68rem;color:var(--text3);margin-top:5px;line-height:1.7}
+.primary-btn{width:100%;padding:14px;background:var(--grad);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:800;box-shadow:0 8px 28px rgba(229,9,20,.28);transition:transform .15s,box-shadow .2s}
+.primary-btn:active{transform:scale(.98)}
+.paste-btn{position:absolute;top:50%;left:8px;transform:translateY(-50%);background:var(--bg2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;font-size:.68rem;font-weight:700;display:flex;align-items:center;gap:4px}
+.paste-btn:active{color:var(--text)}
+.recent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.recent-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s;position:relative}
+.recent-card:hover{transform:translateY(-3px);border-color:#3a3a48}
+.recent-card img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:var(--bg2)}
+.recent-card .rc-info{padding:8px 10px}
+.recent-card .rc-title{font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-card .rc-sub{font-size:.62rem;color:var(--text3);margin-top:3px}
+.recent-card .rc-progress{position:absolute;bottom:0;right:0;left:0;height:3px;background:rgba(0,0,0,.5)}
+.recent-card .rc-progress i{display:block;height:100%;background:var(--accent)}
+.recent-card .rc-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);color:#fff;font-size:.58rem;padding:3px 7px;border-radius:6px;font-weight:700}
+.recent-card .rc-del{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);color:#fff;border:none;font-size:.7rem;display:none;align-items:center;justify-content:center}
+.recent-card:hover .rc-del{display:flex}
+.empty{color:var(--text3);font-size:.78rem;text-align:center;padding:24px;border:1px dashed var(--border);border-radius:12px}
+
+/* ---------- Player ---------- */
+#player{position:fixed;inset:0;background:#000;z-index:1000;display:none;flex-direction:column}
+#player.on{display:flex}
+.stage{flex:1;position:relative;overflow:hidden;background:#000;touch-action:none}
+video{width:100%;height:100%;object-fit:contain;display:block}
+video.zoom-fill{object-fit:cover}
+video.zoom-stretch{object-fit:fill}
+
+/* top bar */
+.topbar{position:absolute;top:0;right:0;left:0;z-index:30;display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(rgba(0,0,0,.75),transparent);transition:opacity .3s,visibility .3s}
+.topbar .tb-title{flex:1;min-width:0}
+.topbar .tb-title h2{font-size:.95rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.topbar .tb-title span{font-size:.68rem;color:var(--text2)}
+.icon-btn{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:none;color:#fff;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:background .2s;flex-shrink:0}
+.icon-btn:hover{background:rgba(255,255,255,.22)}
+.icon-btn.active{background:var(--accent)}
+.icon-btn svg{width:19px;height:19px;fill:currentColor}
+
+/* center play */
+.big-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:rgba(229,9,20,.92);border:none;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 40px rgba(229,9,20,.5);z-index:20;transition:opacity .25s,transform .25s;animation:pulse 2.2s infinite}
+.big-center.hide{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.7)}
+.big-center svg{width:34px;height:34px;fill:#fff;margin-right:-3px}
+@keyframes pulse{0%,100%{box-shadow:0 10px 40px rgba(229,9,20,.5)}50%{box-shadow:0 10px 52px rgba(229,9,20,.75)}}
+
+/* seek preview tooltip */
+.seek-tip{position:absolute;bottom:64px;transform:translateX(50%);background:rgba(0,0,0,.85);backdrop-filter:blur(10px);padding:5px 10px;border-radius:8px;font-size:.7rem;font-weight:700;color:#fff;pointer-events:none;opacity:0;transition:opacity .15s;z-index:25;white-space:nowrap}
+.seek-tip.on{opacity:1}
+
+/* double-tap ripple */
+.ripple{position:absolute;top:50%;transform:translateY(-50%);width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.14);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;z-index:15;pointer-events:none;animation:rippleAnim .45s ease-out forwards}
+.ripple.l{left:24px;right:auto}
+.ripple.r{right:24px;left:auto}
+.ripple span{position:absolute;bottom:8px;font-size:.62rem;font-weight:800}
+@keyframes rippleAnim{0%{opacity:0;transform:translateY(-50%) scale(.6)}30%{opacity:1;transform:translateY(-50%) scale(1)}100%{opacity:0;transform:translateY(-50%) scale(1.06)}}
+
+/* volume/brightness indicator */
+.osd{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);backdrop-filter:blur(12px);border-radius:16px;padding:14px 22px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:35;pointer-events:none;min-width:120px}
+.osd .osd-ic{font-size:1.4rem}
+.osd .osd-track{width:100%;height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+.osd .osd-track i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .1s}
+.osd .osd-val{font-size:.68rem;font-weight:700;color:var(--text2)}
+
+/* toast */
+.toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);backdrop-filter:blur(12px);color:#fff;padding:9px 18px;border-radius:10px;font-size:.78rem;font-weight:700;z-index:40;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1}
+
+/* skip intro */
+.skip-btn{position:absolute;bottom:110px;right:24px;background:rgba(255,255,255,.14);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px 22px;border-radius:10px;font-size:.8rem;font-weight:800;z-index:25;display:none;align-items:center;gap:6px;transition:background .2s}
+.skip-btn:hover{background:rgba(255,255,255,.25)}
+.skip-btn.on{display:flex}
+
+/* next-episode card */
+.next-card{position:absolute;bottom:110px;left:24px;background:rgba(10,10,12,.9);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:14px 16px;z-index:25;display:none;align-items:center;gap:12px;min-width:240px}
+.next-card.on{display:flex}
+.next-card img{width:46px;height:70px;border-radius:8px;object-fit:cover;background:var(--bg2)}
+.next-card .nx-info{flex:1}
+.next-card .nx-label{font-size:.6rem;color:var(--accent2);font-weight:800}
+.next-card .nx-title{font-size:.78rem;font-weight:800;margin-top:3px}
+.next-card .nx-timer{font-size:.64rem;color:var(--text2);margin-top:3px}
+.next-card button{padding:8px 16px;border:none;border-radius:9px;background:var(--grad);color:#fff;font-size:.7rem;font-weight:800}
+
+/* loading */
+.spinner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:58px;height:58px;z-index:18;display:none}
+.spinner.on{display:block}
+.spinner::before{content:'';position:absolute;inset:0;border-radius:50%;border:4px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner span{position:absolute;top:110%;width:120px;left:50%;transform:translateX(-50%);text-align:center;font-size:.68rem;color:var(--text2);font-weight:700}
+
+/* controls bar */
+.controls{padding:0 14px 10px;z-index:30;background:linear-gradient(transparent,rgba(0,0,0,.85));position:absolute;bottom:0;right:0;left:0;transition:opacity .3s,visibility .3s}
+.seek-row{display:flex;align-items:center;gap:10px;padding:0 2px 2px}
+.seek{flex:1;position:relative;height:22px;display:flex;align-items:center;cursor:pointer}
+.seek .track{width:100%;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden;position:relative}
+.seek .buffer{position:absolute;top:0;bottom:0;right:0;background:rgba(255,255,255,.3)}
+.seek .played{position:absolute;top:0;bottom:0;right:0;background:var(--accent)}
+.seek .knob{position:absolute;width:13px;height:13px;border-radius:50%;background:var(--accent);transform:translateX(50%);box-shadow:0 2px 8px rgba(229,9,20,.55);transition:transform .15s}
+.seek:hover .knob{transform:translateX(50%) scale(1.25)}
+.time{font-size:.7rem;font-weight:700;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctl-row{display:flex;align-items:center;gap:4px;margin-top:2px}
+.ctl-row .icon-btn{background:transparent;width:40px;height:40px;font-size:1.15rem}
+.ctl-row .icon-btn:hover{background:rgba(255,255,255,.12)}
+.ctl-row .spacer{flex:1}
+.volume-wrap{display:flex;align-items:center;gap:6px}
+.volume-wrap input[type=range]{width:0;opacity:0;transition:width .25s,opacity .25s;accent-color:var(--accent);height:4px}
+.volume-wrap:hover input[type=range],.volume-wrap input[type=range]:focus{width:70px;opacity:1}
+
+/* popups / panels base */
+.panel{position:absolute;top:0;bottom:0;right:0;width:min(340px,92vw);background:rgba(12,12,16,.96);backdrop-filter:blur(20px);border-left:1px solid var(--border);z-index:50;transform:translateX(105%);transition:transform .3s cubic-bezier(.2,.8,.25,1);display:flex;flex-direction:column;overflow:hidden}
+.panel.on{transform:translateX(0)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.panel-head h3{font-size:.9rem;font-weight:800}
+.panel-body{flex:1;overflow-y:auto;padding:12px 16px;overscroll-behavior:contain}
+.panel-body::-webkit-scrollbar{width:5px}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* speed popover */
+.pop{position:absolute;bottom:64px;background:rgba(12,12,16,.96);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:14px;padding:10px;z-index:55;display:none;min-width:170px}
+.pop.on{display:block}
+.pop h4{font-size:.7rem;font-weight:800;color:var(--text2);padding:4px 8px 8px}
+.pop .opt{display:flex;align-items:center;justify-content:space-between;width:100%;background:transparent;border:none;color:var(--text);padding:9px 10px;border-radius:9px;font-size:.78rem;font-weight:600;text-align:right}
+.pop .opt:hover{background:rgba(255,255,255,.07)}
+.pop .opt.active{color:#fff;background:rgba(229,9,20,.2)}
+.pop .opt.active::after{content:'✓';color:var(--accent);font-weight:900}
+
+/* subtitles */
+.sub-render{position:absolute;bottom:76px;right:0;left:0;display:flex;justify-content:center;z-index:12;pointer-events:none;padding:0 6%;}
+.sub-render .cue{background:rgba(0,0,0,.75);border-radius:6px;padding:4px 12px;line-height:1.65;text-align:center;white-space:pre-wrap;max-width:85%}
+
+/* episodes */
+.ep-season{font-size:.78rem;font-weight:800;color:var(--text2);margin:14px 0 8px;display:flex;align-items:center;gap:8px}
+.ep-season::after{content:'';flex:1;height:1px;background:var(--border)}
+.ep-item{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:none;color:var(--text);padding:9px 10px;border-radius:10px;font-size:.8rem;font-weight:600;text-align:right;transition:background .15s;position:relative;overflow:hidden}
+.ep-item:hover{background:rgba(255,255,255,.06)}
+.ep-item.current{background:rgba(229,9,20,.14);color:#fff}
+.ep-item .ep-num{width:26px;height:26px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:800;color:var(--text2);flex-shrink:0}
+.ep-item.current .ep-num{background:var(--accent);color:#fff}
+.ep-item .ep-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ep-item .ep-check{font-size:.75rem;color:var(--green);flex-shrink:0}
+.ep-item .ep-watched-bar{position:absolute;bottom:0;right:0;height:2px;background:var(--green)}
+
+/* versions */
+.ver-item{display:flex;align-items:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 14px;margin-bottom:8px;color:var(--text);font-size:.8rem;font-weight:700;transition:border-color .2s;text-align:right}
+.ver-item:hover{border-color:#3a3a48}
+.ver-item.active{border-color:var(--accent);background:rgba(229,9,20,.08)}
+.ver-item .vi-badge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+
+/* settings rows */
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 4px;border-bottom:1px solid rgba(40,40,51,.5);font-size:.8rem}
+.set-row:last-child{border-bottom:none}
+.set-row label{font-weight:700}
+.set-row select,.set-row input[type=range]{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:.72rem;outline:none;accent-color:var(--accent)}
+.set-row input[type=range]{width:130px;padding:0;border:none;background:transparent}
+.set-row input[type=color]{width:44px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);padding:2px;cursor:pointer}
+.seg{display:flex;background:var(--bg2);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:none;background:transparent;color:var(--text2);font-size:.68rem;font-weight:700;padding:6px 11px;border-radius:7px;transition:.15s}
+.seg button.active{background:var(--accent);color:#fff}
+
+/* stats modal */
+.stats-grid{font-size:.74rem}
+.stats-grid .row{display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px solid rgba(40,40,51,.5)}
+.stats-grid .row b{color:var(--text2);font-weight:600}
+.stats-grid .row span{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* bottom sheet for mobile sub sync etc */
+input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
+
+/* error overlay */
+.err-ov{position:absolute;inset:0;background:rgba(8,8,10,.94);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px;text-align:center}
+.err-ov.on{display:flex}
+.err-ov .e-ic{font-size:2.6rem}
+.err-ov h3{font-size:1rem;font-weight:800}
+.err-ov p{font-size:.74rem;color:var(--text2);line-height:1.9;max-width:340px}
+.err-ov .e-actions{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+.err-ov .e-actions button{padding:10px 20px;border:none;border-radius:10px;font-size:.75rem;font-weight:800}
+.err-ov .e-retry{background:var(--grad);color:#fff}
+.err-ov .e-back{background:var(--bg2);color:var(--text);border:1px solid var(--border)!important}
+
+/* resume prompt */
+.resume-ov{position:absolute;inset:0;background:rgba(8,8,10,.85);backdrop-filter:blur(6px);z-index:58;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center}
+.resume-ov.on{display:flex}
+.resume-ov h3{font-size:1.05rem;font-weight:800}
+.resume-ov .r-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.resume-ov .r-actions button{padding:12px 24px;border:none;border-radius:11px;font-size:.8rem;font-weight:800}
+.resume-ov .r-yes{background:var(--grad);color:#fff;box-shadow:0 6px 22px rgba(229,9,20,.3)}
+.resume-ov .r-no{background:rgba(255,255,255,.1);color:var(--text)}
+
+/* AB repeat badge */
+.ab-badge{position:absolute;top:70px;right:16px;z-index:22;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border-radius:9px;padding:7px 12px;font-size:.66rem;font-weight:800;display:none;align-items:center;gap:6px;border:1px solid var(--border)}
+.ab-badge.on{display:flex}
+.ab-badge b{color:var(--gold)}
+
+/* sleep timer badge */
+.sleep-badge{position:absolute;top:70px;left:16px;z-index:22;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border-radius:9px;padding:7px 12px;font-size:.66rem;font-weight:800;display:none;align-items:center;gap:6px;border:1px solid var(--border)}
+.sleep-badge.on{display:flex}
+.sleep-badge b{color:var(--blue)}
+
+/* hidden util */
+.hide-ui .topbar,.hide-ui .controls{opacity:0;visibility:hidden}
+.hide-ui .stage{cursor:none}
+@media (hover:none){.volume-wrap input[type=range]{width:70px;opacity:1}}
+
+/* mobile tweaks */
+@media(max-width:640px){
+  .topbar{padding:10px 10px}
+  .icon-btn{width:34px;height:34px}
+  .topbar .tb-title h2{font-size:.82rem}
+  .controls{padding:0 8px 6px}
+  .ctl-row .icon-btn{width:36px;height:36px}
+  .seek .knob{width:11px;height:11px}
+  .sub-render{bottom:86px}
+  #home{padding:22px 14px 50px}
+}
+/* landscape phone: tighter */
+@media(max-width:920px) and (orientation:landscape){.controls{padding-bottom:2px}.sub-render{bottom:70px}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<div id="home">
+  <div class="logo">
+    <div class="logo-ic">
+      <svg viewBox="0 0 24 24"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.04 1.04 0 0 0 0-1.76L9.56 4.26A1.04 1.04 0 0 0 8 5.14z"/></svg>
+    </div>
+    <div>
+      <h1>سینما پلی</h1>
+      <p>پلیر آنلاین فیلم و سریال</p>
+    </div>
+  </div>
+  <p class="tagline">لینک مستقیم ویدیو (MP4 / MKV / WebM / M3U8) را بچسبانید و آنلاین تماشا کنید — با زیرنویس، دوبله و ادامه تماشا.</p>
+
+  <div class="sec-title">🎬 پخش جدید</div>
+  <div class="field">
+    <label>لینک ویدیو *</label>
+    <div style="position:relative">
+      <input id="inp-src" type="url" placeholder="https://example.com/movie.mp4 یا .m3u8" dir="ltr" style="padding-left:64px">
+      <button class="paste-btn" id="btn-paste" type="button">📋 چسباندن</button>
+    </div>
+    <div class="hint">پشتیبانی: MP4 · WebM · MKV · M3U8 (استریم چندکیفیته HLS)</div>
+  </div>
+  <div class="field">
+    <label>عنوان (اختیاری)</label>
+    <input id="inp-title" type="text" placeholder="مثلاً اینترسلار ۲۰۱۴">
+  </div>
+  <div class="field">
+    <label>لینک پوستر (اختیاری)</label>
+    <input id="inp-poster" type="url" placeholder="https://..." dir="ltr">
+  </div>
+  <div class="field">
+    <label>زیرنویس‌ها (اختیاری — هر خط یک لینک)</label>
+    <textarea id="inp-subs" placeholder="https://example.com/sub-fa.srt&#10;https://example.com/sub-en.srt" dir="ltr"></textarea>
+    <div class="hint">فرمت‌های SRT · VTT · (ASS متنی) — یا از داخل پلیر فایل انتخاب کنید 📁</div>
+  </div>
+  <div class="field">
+    <label>نسخه‌های دیگر (اختیاری — دوبله/زیرنویس‌دار/کیفیت‌ها)</label>
+    <textarea id="inp-vers" placeholder="دوبله|https://example.com/movie-dub.mp4&#10;1080p|https://example.com/movie-1080.mp4" dir="ltr"></textarea>
+  </div>
+  <div class="field">
+    <label>اپیزودهای سریال (اختیاری — فرمت: فصل|قسمت|نام|لینک)</label>
+    <textarea id="inp-eps" placeholder="1|1|پایلوت|https://example.com/s01e01.mp4&#10;1|2|قسمت دوم|https://example.com/s01e02.mp4" dir="ltr"></textarea>
+  </div>
+  <div class="field">
+    <label>شناسه IMDb (اختیاری — برای ادامه تماشا)</label>
+    <input id="inp-imdb" type="text" placeholder="tt1375666" dir="ltr">
+  </div>
+  <button class="primary-btn" id="btn-play">▶ پخش</button>
+
+  <div class="sec-title">🕘 ادامه تماشا</div>
+  <div id="recents"></div>
+</div>
+
+<!-- ═══════════════════ PLAYER ═══════════════════ -->
+<div id="player">
+  <div class="stage" id="stage">
+    <video id="video" playsinline preload="metadata"></video>
+
+    <!-- custom subtitles render layer -->
+    <div class="sub-render" id="subRender"></div>
+
+    <!-- loading -->
+    <div class="spinner" id="spinner"><span>در حال بارگذاری…</span></div>
+
+    <!-- top bar -->
+    <div class="topbar" id="topbar">
+      <button class="icon-btn" id="btn-close" title="بازگشت">
+        <svg viewBox="0 0 24 24"><path d="M15.54 6.46a.996.996 0 0 0-1.41 0L12 9.58 8.88 6.46A.996.996 0 1 0 7.47 7.88l3.12 3.12-3.12 3.12a.996.996 0 1 0 1.41 1.41L12 12.41l3.12 3.12a.996.996 0 1 0 1.41-1.41L13.41 11l3.13-3.12c.39-.4.39-1.03 0-1.42z"/></svg>
+      </button>
+      <div class="tb-title">
+        <h2 id="v-title">—</h2>
+        <span id="v-sub"></span>
+      </div>
+      <button class="icon-btn" id="btn-eps" title="اپیزودها" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-vers" title="نسخه‌ها" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M12 2 3 7v10l9 5 9-5V7l-9-5zm0 2.3 6.5 3.6L12 11.5 5.5 7.9 12 4.3zM5 9.7l6 3.3v6.5l-6-3.3V9.7zm14 6.5-6 3.3V13l6-3.3v6.5z"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-pip" title="تصویر در تصویر">
+        <svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>
+      </button>
+    </div>
+
+    <!-- center play -->
+    <button class="big-center" id="bigPlay">
+      <svg viewBox="0 0 24 24"><path d="M8 5.14v13.72c0 .8.87 1.3 1.56.88l10.54-6.86a1.04 1.04 0 0 0 0-1.76L9.56 4.26A1.04 1.04 0 0 0 8 5.14z"/></svg>
+    </button>
+
+    <!-- OSD (volume/brightness) -->
+    <div class="osd" id="osd" style="display:none">
+      <div class="osd-ic" id="osd-ic">🔊</div>
+      <div class="osd-track"><i id="osd-fill" style="width:50%"></i></div>
+      <div class="osd-val" id="osd-val">۵۰٪</div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="seek-tip" id="seekTip">00:00</div>
+
+    <!-- skip intro -->
+    <button class="skip-btn" id="skipIntro">رد کردن اینترو ⏭</button>
+
+    <!-- next episode -->
+    <div class="next-card" id="nextCard">
+      <img id="nx-img" src="" alt="">
+      <div class="nx-info">
+        <div class="nx-label">اپیزود بعدی</div>
+        <div class="nx-title" id="nx-title">—</div>
+        <div class="nx-timer" id="nx-timer"></div>
+      </div>
+      <button id="nx-go">پخش ▶</button>
+    </div>
+
+    <!-- badges -->
+    <div class="ab-badge" id="abBadge">🔁 A <b id="abA">--:--</b> | B <b id="abB">--:--</b></div>
+    <div class="sleep-badge" id="sleepBadge">😴 خواب در <b id="sleepVal">--</b></div>
+
+    <!-- controls -->
+    <div class="controls" id="controls">
+      <div class="seek-row">
+        <span class="time" id="t-cur">00:00</span>
+        <div class="seek" id="seek">
+          <div class="track">
+            <div class="buffer" id="bufferBar" style="width:0"></div>
+            <div class="played" id="playedBar" style="width:0"></div>
+          </div>
+          <div class="knob" id="knob" style="right:0%"></div>
+        </div>
+        <span class="time" id="t-dur">00:00</span>
+      </div>
+      <div class="ctl-row">
+        <button class="icon-btn" id="btn-play-pause" title="پخش/توقف">
+          <svg id="ic-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="ic-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-prev-ep" title="اپیزود قبلی" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-next" title="۱۰ ثانیه جلو">
+          <svg viewBox="0 0 24 24"><path d="m11 18 8.5-6L11 6v12zM20 6h2v12h-2z"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-back" title="۱۰ ثانیه عقب">
+          <svg viewBox="0 0 24 24"><path d="M13 6 4.5 12 13 18V6zM4 6h2v12H4z"/></svg>
+        </button>
+        <div class="volume-wrap">
+          <button class="icon-btn" id="btn-mute" title="بی‌صدا">
+            <svg id="ic-vol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.47 4.47 0 0 0 2.5-4z"/></svg>
+            <svg id="ic-mute" viewBox="0 0 24 24" style="display:none"><path d="M16.5 12A4.5 4.5 0 0 0 14 8v2.18l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z"/></svg>
+          </button>
+          <input type="range" id="vol" min="0" max="1" step="0.01" value="1">
+        </div>
+        <div class="spacer"></div>
+        <div style="position:relative">
+          <button class="icon-btn" id="btn-subs" title="زیرنویس">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM4 11h4v2H4v-2zm4 6H4v-2h4v2zm2-6h8v2h-8v-2zm8 6h-8v-2h8v2z"/></svg>
+          </button>
+        </div>
+        <div style="position:relative">
+          <button class="icon-btn" id="btn-speed" title="سرعت">۱×</button>
+        </div>
+        <div style="position:relative">
+          <button class="icon-btn" id="btn-menu" title="بیشتر">
+            <svg viewBox="0 0 24 24"><path d="M19 14a2 2 0 1 0-2-2c0 1.1.9 2 2 2zm-5-2a2 2 0 1 0-4 0 2 2 0 0 0 4 0zm-7 0a2 2 0 1 0-4 0 2 2 0 0 0 4 0z"/></svg>
+          </button>
+        </div>
+        <button class="icon-btn" id="btn-full" title="تمام‌صفحه">
+          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ▂▂▂ Panels ▂▂▂ -->
+    <!-- Episodes -->
+    <div class="panel" id="panel-eps">
+      <div class="panel-head">
+        <h3>📺 اپیزودها</h3>
+        <button class="icon-btn" data-close-panel="panel-eps">✕</button>
+      </div>
+      <div class="panel-body" id="epsList"></div>
+    </div>
+
+    <!-- Versions -->
+    <div class="panel" id="panel-vers">
+      <div class="panel-head">
+        <h3>🎛 نسخه‌ها</h3>
+        <button class="icon-btn" data-close-panel="panel-vers">✕</button>
+      </div>
+      <div class="panel-body" id="versList"></div>
+    </div>
+
+    <!-- Subtitles manage -->
+    <div class="panel" id="panel-subs">
+      <div class="panel-head">
+        <h3>💬 زیرنویس‌ها</h3>
+        <button class="icon-btn" data-close-panel="panel-subs">✕</button>
+      </div>
+      <div class="panel-body" id="subsList"></div>
+    </div>
+
+    <!-- Settings -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-head">
+        <h3>⚙️ تنظیمات پلیر</h3>
+        <button class="icon-btn" data-close-panel="panel-settings">✕</button>
+      </div>
+      <div class="panel-body" id="settingsBody">
+        <div class="set-row">
+          <label>سنکرون زیرنویس (ثانیه)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="icon-btn" id="syncMinus" style="width:30px;height:30px;font-size:.9rem">−</button>
+            <b id="syncVal" style="font-size:.75rem;min-width:52px;text-align:center;font-variant-numeric:tabular-nums">0.0</b>
+            <button class="icon-btn" id="syncPlus" style="width:30px;height:30px;font-size:.9rem">+</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <label>اندازه زیرنویس</label>
+          <input type="range" id="subSize" min="14" max="52" step="1" value="22">
+        </div>
+        <div class="set-row">
+          <label>رنگ زیرنویس</label>
+          <input type="color" id="subColor" value="#ffffff">
+        </div>
+        <div class="set-row">
+          <label>سایه / پس‌زمینه</label>
+          <div class="seg" id="subBgSeg">
+            <button data-bg="shadow" class="active">سایه</button>
+            <button data-bg="box">پس‌زمینه</button>
+            <button data-bg="none">هیچ</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <label>موقعیت عمودی</label>
+          <input type="range" id="subPos" min="0" max="40" step="1" value="0">
+        </div>
+        <div class="set-row">
+          <label>پخش خودکار اپیزود بعد</label>
+          <div class="seg" id="autoNextSeg">
+            <button data-v="1" class="active">روشن</button>
+            <button data-v="0">خاموش</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <label>Zoom تصویر</label>
+          <div class="seg" id="zoomSeg">
+            <button data-z="fit" class="active">Fit</button>
+            <button data-z="fill">Fill</button>
+            <button data-z="stretch">Stretch</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- More menu -->
+    <div class="pop" id="pop-menu">
+      <button class="opt" id="m-screenshot">📷 اسکرین‌شات</button>
+      <button class="opt" id="m-ab">🔁 تکرار A-B</button>
+      <button class="opt" id="m-sleep">😴 تایمر خواب</button>
+      <button class="opt" id="m-skipintro">⏭ تنظیم رد کردن اینترو</button>
+      <button class="opt" id="m-stats">📊 آمار فنی</button>
+      <button class="opt" id="m-settings">⚙️ تنظیمات</button>
+    </div>
+
+    <!-- speed popover -->
+    <div class="pop" id="pop-speed">
+      <h4>سرعت پخش</h4>
+      <button class="opt" data-spd="0.25">۰٫۲۵×</button>
+      <button class="opt" data-spd="0.5">۰٫۵×</button>
+      <button class="opt" data-spd="0.75">۰٫۷۵×</button>
+      <button class="opt active" data-spd="1">۱× (عادی)</button>
+      <button class="opt" data-spd="1.25">۱٫۲۵×</button>
+      <button class="opt" data-spd="1.5">۱٫۵×</button>
+      <button class="opt" data-spd="2">۲×</button>
+      <button class="opt" data-spd="3">۳×</button>
+      <button class="opt" data-spd="4">۴×</button>
+    </div>
+
+    <!-- subs popover -->
+    <div class="pop" id="pop-subs">
+      <h4>زیرنویس</h4>
+      <div id="subsPopList"></div>
+      <button class="opt" id="subs-off">✖ خاموش</button>
+      <button class="opt" id="subs-file">📁 فایل از دستگاه</button>
+      <button class="opt" id="subs-url">🔗 لینک زیرنویس</button>
+      <button class="opt" id="subs-manage">⚙️ مدیریت و استایل</button>
+    </div>
+
+    <!-- stats popover -->
+    <div class="pop" id="pop-stats" style="min-width:230px;max-width:280px">
+      <h4>📊 آمار فنی</h4>
+      <div class="stats-grid" id="statsBody"></div>
+    </div>
+
+    <!-- sleep popover -->
+    <div class="pop" id="pop-sleep">
+      <h4>خاموشی خودکار</h4>
+      <button class="opt" data-sleep="0">خاموش</button>
+      <button class="opt" data-sleep="15">۱۵ دقیقه</button>
+      <button class="opt" data-sleep="30">۳۰ دقیقه</button>
+      <button class="opt" data-sleep="60">۱ ساعت</button>
+      <button class="opt" data-sleep="end">تا پایان ویدیو</button>
+    </div>
+
+    <!-- error overlay -->
+    <div class="err-ov" id="errOv">
+      <div class="e-ic">⚠️</div>
+      <h3 id="err-title">خطا در پخش</h3>
+      <p id="err-msg">ویدیو بارگذاری نشد. لینک را بررسی کنید.</p>
+      <div class="e-actions">
+        <button class="e-retry" id="err-retry">🔄 تلاش مجدد</button>
+        <button class="e-back" id="err-back">بازگشت</button>
+      </div>
+    </div>
+
+    <!-- resume overlay -->
+    <div class="resume-ov" id="resumeOv">
+      <h3>▶ ادامه تماشا؟</h3>
+      <p style="font-size:.8rem;color:var(--text2)">آخرین بار در <b id="resume-time" style="color:var(--accent)">--:--</b> رها کرده‌اید</p>
+      <div class="r-actions">
+        <button class="r-yes" id="resume-yes">ادامه بده</button>
+        <button class="r-no" id="resume-no">از اول</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="subFileInput" accept=".srt,.vtt,.ass" style="display:none">
+
+<script src="js/subs.js"></script>
+<script src="js/player.js"></script>
+<script>
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>
