@@ -281,7 +281,7 @@ let seeking = false;
 function seekPct(e) {
   const r = seek.getBoundingClientRect();
   const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-  return clamp(1 - x / r.width, 0, 1); // RTL: right = 0
+  return clamp(x / r.width, 0, 1); // LTR: left = 0
 }
 seek.addEventListener('pointerdown', e => {
   seeking = true; seek.setPointerCapture(e.pointerId); video.pause();
@@ -300,7 +300,7 @@ seek.addEventListener('pointerleave', () => { $('seekTip').classList.remove('on'
 
 function updateSeekUI(p) {
   const pct = (p * 100).toFixed(3) + '%';
-  $('playedBar').style.width = pct; $('knob').style.right = pct;
+  $('playedBar').style.width = pct; $('knob').style.left = pct;
   $('t-cur').textContent = fmt(p * S.duration);
 }
 function showTip(e) {
@@ -308,7 +308,7 @@ function showTip(e) {
   const p = seekPct(e);
   tip.textContent = fmt(p * S.duration);
   const r = seek.getBoundingClientRect();
-  tip.style.right = ((1 - p) * r.width) + 'px';
+  tip.style.left = (p * r.width) + 'px';
   tip.classList.add('on');
 }
 
@@ -316,7 +316,7 @@ function showTip(e) {
 video.addEventListener('timeupdate', () => {
   if (!seeking) {
     const p = S.duration ? video.currentTime / S.duration : 0;
-    $('playedBar').style.width = (p * 100) + '%'; $('knob').style.right = (p * 100) + '%';
+    $('playedBar').style.width = (p * 100) + '%'; $('knob').style.left = (p * 100) + '%';
     $('t-cur').textContent = fmt(video.currentTime);
   }
   // buffer
