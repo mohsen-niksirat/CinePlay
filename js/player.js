@@ -53,10 +53,19 @@ function watchedKey() { return 'cp-watched:' + (S.imdb || S.src); }
 /* ---------- URL params ---------- */
 function parseParams() {
   const p = new URLSearchParams(location.search);
-  if (p.get('src')) return {
-    src: p.get('src'), title: p.get('title') || '', poster: p.get('poster') || '',
-    imdb: p.get('imdb') || '', sub: p.get('sub') || '', next: p.get('next') || ''
-  };
+  if (p.get('src')) {
+    const out = { src: p.get('src'), title: p.get('title') || '', poster: p.get('poster') || '', imdb: p.get('imdb') || '', sub: p.get('sub') || '', next: p.get('next') || '' };
+    /* لیست اپیزودهای فصل: eps=<JSON encode شده یک بار> */
+    const epsRaw = p.get('eps');
+    if (epsRaw) {
+      try {
+        let eps = JSON.parse(epsRaw);
+        if (typeof eps === 'string') eps = JSON.parse(eps); // دوبار encode از سینما
+        if (Array.isArray(eps) && eps.length) out.episodes = eps.map(e => typeof e === 'string' ? { src: e, name: '' } : e);
+      } catch (e) { }
+    }
+    return out;
+  }
   if (location.hash.startsWith('#j=')) {
     try {
       const j = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(3)))));
@@ -853,6 +862,20 @@ window.addEventListener('popstate', e => {
   if (p) {
     if (p.raw && p.raw.versions) S.versions = p.raw.versions.map(v => typeof v === 'string' ? { name: v, src: v } : v);
     if (p.raw && p.raw.episodes) S.episodes = p.raw.episodes;
+    if (p.episodes) {
+      let n = 0;
+      S.episodes = p.episodes.map(e => {
+        n++;
+        const fname = decodeURIComponent(String(e.src || '').split('/').pop() || '');
+        const em = /S(\d{1,2})\s*[.\-_]?E(\d{1,3})/i.exec(fname);
+        return {
+          season: em ? +em[1] : 1,
+          ep: em ? +em[2] : n,
+          name: (em ? 'قسمت ' + fa(+em[2]) + ' — ' : '') + (e.name && e.name !== fname ? e.name : fname.replace(/\.[^.]+$/, '')),
+          src: e.src || e.u
+        };
+      });
+    }
     if (p.sub) Subs.addRemote([p.sub]);
     if (p.next) S.next = p.next;
     openPlayer(p.src, p.title, p.poster, p.imdb);
