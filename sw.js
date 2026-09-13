@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cineplay-v3';
+const CACHE_NAME = 'cineplay-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',

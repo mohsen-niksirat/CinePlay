@@ -64,6 +64,15 @@ function parseParams() {
         if (Array.isArray(eps) && eps.length) out.episodes = eps.map(e => typeof e === 'string' ? { src: e, name: '' } : e);
       } catch (e) { }
     }
+    /* نسخه‌های سوییچ‌پذیر (دوبله/زیرنویس‌دار): vers=<JSON> */
+    const versRaw = p.get('vers');
+    if (versRaw) {
+      try {
+        let vers = JSON.parse(versRaw);
+        if (typeof vers === 'string') vers = JSON.parse(vers);
+        if (Array.isArray(vers) && vers.length) out.versions = vers.map(v => typeof v === 'string' ? { name: v.slice(0, 40), src: v } : { name: v.name || v.src.slice(0, 40), src: v.src || v.u });
+      } catch (e) { }
+    }
     return out;
   }
   if (location.hash.startsWith('#j=')) {
@@ -861,6 +870,7 @@ window.addEventListener('popstate', e => {
   const p = parseParams();
   if (p) {
     if (p.raw && p.raw.versions) S.versions = p.raw.versions.map(v => typeof v === 'string' ? { name: v, src: v } : v);
+    if (p.versions) S.versions = p.versions;
     if (p.raw && p.raw.episodes) S.episodes = p.raw.episodes;
     if (p.episodes) {
       let n = 0;
