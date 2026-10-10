@@ -197,7 +197,13 @@ function loadSource(src, keepPos) {
 
   if (isHls(src) && window.Hls && Hls.isSupported()) {
     const hls = new Hls({
-      maxBufferLength: 30, manifestLoadingMaxRetry: 3, fragLoadingMaxRetry: 4,
+      maxBufferLength: 60,
+      maxMaxBufferLength: 600,
+      manifestLoadingMaxRetry: 5,
+      fragLoadingMaxRetry: 6,
+      levelLoadingMaxRetry: 4,
+      fragLoadingTimeOut: 20000,
+      manifestLoadingTimeOut: 20000,
       // لودر پروکسی: اگر خطای شبکه یا رنج آمد از پروکسی ادامه بده
       loaderSetup: undefined
     });
@@ -212,7 +218,7 @@ function loadSource(src, keepPos) {
       toast('🔒 اتصال مستقیم ممکن نیست — از پروکسی ادامه می‌دهیم');
       // reload source via proxy loader
       if (S.hls) { S.hls.destroy(); S.hls = null; }
-      const hls2 = new Hls({ maxBufferLength: 30, manifestLoadingMaxRetry: 2, fragLoadingMaxRetry: 6 });
+      const hls2 = new Hls({ maxBufferLength: 60, maxMaxBufferLength: 600, manifestLoadingMaxRetry: 4, fragLoadingMaxRetry: 8, fragLoadingTimeOut: 30000 });
       S.hls = hls2;
       const PLoader = Net.makeProxyLoader(Hls.DefaultConfig.loader);
       hls2.config.loader = PLoader;
@@ -729,12 +735,30 @@ function wireQuality() {
     $('pop-quality').classList.remove('on');
     wireQuality();
   });
-  // audio tracks (دوبله چندصدا داخل HLS)
-  const at = (S.hls.audioTracks && S.hls.audioTracks.length > 1) ? S.hls.audioTracks : null;
-  $('audioHead').style.display = at ? '' : 'none';
-  al.innerHTML = at ? at.map((t, i) => `<button class="hlrow ${S.hls.audioTrack === i ? 'active' : ''}" data-a="${i}">${esc(t.name || t.lang || 'ترک ' + (i + 1))}</button>`).join('') : '';
+  // audio tracks (HLS + Native MP4)
+  let atHtml = '';
+  if (S.hls && S.hls.audioTracks && S.hls.audioTracks.length > 1) {
+    $('audioHead').style.display = '';
+    atHtml = S.hls.audioTracks.map((t, i) => `<button class="hlrow ${S.hls.audioTrack === i ? 'active' : ''}" data-hls-a="${i}">${esc(t.name || t.lang || 'ترک ' + (i + 1))}</button>`).join('');
+  } else if (video.audioTracks && video.audioTracks.length > 1) {
+    $('audioHead').style.display = '';
+    for (let i = 0; i < video.audioTracks.length; i++) {
+      const t = video.audioTracks[i];
+      atHtml += `<button class="hlrow ${t.enabled ? 'active' : ''}" data-nat-a="${i}">${esc(t.label || t.language || 'ترک ' + (i + 1))}</button>`;
+    }
+  } else {
+    $('audioHead').style.display = 'none';
+  }
+  al.innerHTML = atHtml;
   al.querySelectorAll('.hlrow').forEach(b => b.onclick = () => {
-    S.hls.audioTrack = +b.dataset.a;
+    if (b.dataset.hlsA !== undefined) {
+      S.hls.audioTrack = +b.dataset.hlsA;
+    } else if (b.dataset.natA !== undefined) {
+      const idx = +b.dataset.natA;
+      for (let i = 0; i < video.audioTracks.length; i++) {
+        video.audioTracks[i].enabled = (i === idx);
+      }
+    }
     toast('ترک صدا: ' + b.textContent.trim());
     $('pop-quality').classList.remove('on');
   });
