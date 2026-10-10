@@ -1,9 +1,10 @@
-const CACHE_NAME = 'cineplay-v4';
+const CACHE_NAME = 'cineplay-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './js/player.js',
+  './js/cast.js',
   './js/subs.js',
   './js/finder.js',
   './js/net.js',

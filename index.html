@@ -10,6 +10,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 <style>
 :root{
   --bg:#0a0a0c;--bg2:#15151a;--card:#191920;--border:#282833;
@@ -375,6 +376,9 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
       <button class="icon-btn" id="btn-pip" title="تصویر در تصویر" aria-label="تصویر در تصویر">
         <svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>
       </button>
+      <div class="icon-btn" id="btn-cast" title="ارسال به تلویزیون" style="display:none;">
+        <google-cast-launcher style="width:24px;height:24px;cursor:pointer;--connected-color:#e50914;--disconnected-color:#fff;"></google-cast-launcher>
+      </div>
     </div>
 
     <!-- center play -->
@@ -685,6 +689,7 @@ input[type=range].sync{width:100%;accent-color:var(--accent);height:5px}
 <script src="js/subs.js"></script>
 <script src="js/finder.js"></script>
 <script src="js/player.js"></script>
+<script src="js/cast.js"></script>
 <script>
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
