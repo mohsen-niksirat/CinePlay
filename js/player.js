@@ -563,6 +563,7 @@ $('m-skipintro').addEventListener('click', () => {
   togglePop('pop-menu');
 });
 $('m-stats').addEventListener('click', () => { renderStats(); togglePop('pop-stats', $('btn-menu')); $('pop-menu').classList.remove('on'); });
+$('m-shortcuts').addEventListener('click', () => { togglePanel('panel-shortcuts'); togglePop('pop-menu'); });
 $('m-settings').addEventListener('click', () => { togglePanel('panel-settings'); togglePop('pop-menu'); });
 
 $('skipIntro').addEventListener('click', () => {
