@@ -893,3 +893,46 @@ window.addEventListener('popstate', e => {
   }
   updQualityBtn();
 })();
+
+
+/* ---------- iframe API (Phase 4: external integration) ---------- */
+(() => {
+  if (window.self === window.top) return; // Not in iframe
+  
+  const notify = (type, data = {}) => {
+    window.parent.postMessage({ source: 'cineplay', type, ...data }, '*');
+  };
+
+  video.addEventListener('play', () => notify('play'));
+  video.addEventListener('pause', () => notify('pause'));
+  video.addEventListener('ended', () => notify('ended'));
+  video.addEventListener('timeupdate', () => notify('timeupdate', { time: video.currentTime, duration: video.duration }));
+  video.addEventListener('loadedmetadata', () => notify('ready', { duration: video.duration }));
+
+  window.addEventListener('message', e => {
+    if (!e.data || e.data.target !== 'cineplay') return;
+    const msg = e.data;
+    switch(msg.type) {
+      case 'play':
+        video.play().catch(()=>{});
+        break;
+      case 'pause':
+        video.pause();
+        break;
+      case 'seek':
+        if (typeof msg.time === 'number') video.currentTime = msg.time;
+        break;
+      case 'load':
+        // expecting msg.payload to have { src, title, poster, imdb, next }
+        if (msg.payload && msg.payload.src) {
+          if (msg.payload.sub) Subs.addRemote(Array.isArray(msg.payload.sub) ? msg.payload.sub : [msg.payload.sub]);
+          if (msg.payload.next) S.next = msg.payload.next;
+          openPlayer(msg.payload.src, msg.payload.title, msg.payload.poster, msg.payload.imdb);
+        }
+        break;
+    }
+  });
+
+  // initial notify
+  notify('init');
+})();
